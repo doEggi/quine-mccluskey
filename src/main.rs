@@ -1,3 +1,6 @@
+/// Warning: this calculates the smalles possible DNF, not the smallest possible form overall...
+/// You can take the result of this program and minimize it further.
+/// Also: with many bits (> 8) the calculation takes multiple seconds. It's not very optimized.
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Debug, Display},
@@ -6,7 +9,10 @@ use std::{
 };
 
 fn main() {
-    const TABLE: &[u8] = &[0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0];
+    const TABLE: &[u8] = &[
+        0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        1, 1,
+    ];
     const BITS: usize = TABLE.len().ilog2() as usize;
     let mut table = make_table::<BITS>(TABLE);
     println!("Start:");
