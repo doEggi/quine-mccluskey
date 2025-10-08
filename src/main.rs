@@ -13,19 +13,33 @@ fn main() {
     println!("{table}");
     println!();
     let start = Instant::now();
-    loop {
+    let rows = loop {
         match table.tick() {
             TickResult::Done(rows) => {
-                println!("Done:");
-                for row in rows {
-                    println!("{row}");
-                }
-                break;
+                break rows;
             }
             TickResult::NotDone(table_) => table = table_,
         }
-    }
+    };
     let end = start.elapsed();
+    println!("Done:");
+    for row in &rows {
+        println!("{row}");
+    }
+    print!("y = ");
+    for (i, row) in rows.iter().enumerate() {
+        if i != 0 {
+            print!(" +  ");
+        }
+        for (index, state) in row.data.iter().enumerate() {
+            match state {
+                State::One => print!("x{index} "),
+                State::Zero => print!("Nx{index} "),
+                State::DontCare => {}
+            }
+        }
+    }
+    println!();
     println!("Took: {end:?}");
 }
 
