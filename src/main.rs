@@ -2,6 +2,7 @@ use std::{
     collections::{HashMap, HashSet},
     fmt::{Debug, Display},
     ops::{Index, IndexMut},
+    time::Instant,
 };
 
 fn main() {
@@ -11,6 +12,7 @@ fn main() {
     println!("Start:");
     println!("{table}");
     println!();
+    let start = Instant::now();
     loop {
         match table.tick() {
             TickResult::Done(rows) => {
@@ -23,6 +25,8 @@ fn main() {
             TickResult::NotDone(table_) => table = table_,
         }
     }
+    let end = start.elapsed();
+    println!("Took: {end:?}");
 }
 
 /// Create the start table
