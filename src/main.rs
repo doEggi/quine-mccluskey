@@ -1,6 +1,6 @@
 /// Warning: this calculates the smalles possible DNF, not the smallest possible form overall...
 /// You can take the result of this program and minimize it further.
-/// Also: with many bits (> 8) the calculation takes multiple seconds. It's not very optimized.
+/// Also: with many bits (> 8) the calculation takes multiple seconds. It's not very optimized (yet).
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Debug, Display},
@@ -9,15 +9,37 @@ use std::{
 };
 
 fn main() {
-    const TABLE: &[u8] = &[
-        0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
-        1, 1,
-    ];
+    /*
+     * This represents the truth table:
+     * x3 x2 x1 x0  y
+     *  0  0  0  0  0
+     *  0  0  0  1  0
+     *  0  0  1  0  1
+     *  0  0  1  1  1
+     *  0  1  0  0  0
+     *  0  1  0  1  0
+     *  0  1  1  0  1
+     *  0  1  1  1  1
+     *  1  0  0  0  0
+     *  1  0  0  1  0
+     *  1  0  1  0  1
+     *  1  0  1  1  1
+     *  1  1  0  0  0
+     *  1  1  0  1  0
+     *  1  1  1  0  1
+     *  1  1  1  1  0
+     * TABLE contains the column of y in ascending order
+     */
+    const TABLE: &[u8] = &[0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0];
     const BITS: usize = TABLE.len().ilog2() as usize;
+    assert!(2usize.pow(BITS as u32) == TABLE.len());
+
     let mut table = make_table::<BITS>(TABLE);
+
     println!("Start:");
     println!("{table}");
     println!();
+
     let start = Instant::now();
     let rows = loop {
         match table.tick() {
@@ -27,11 +49,13 @@ fn main() {
             TickResult::NotDone(table_) => table = table_,
         }
     };
+
     let end = start.elapsed();
     println!("Done:");
     for row in &rows {
         println!("{row}");
     }
+
     print!("y = ");
     for (i, row) in rows.iter().enumerate() {
         if i != 0 {
@@ -51,7 +75,6 @@ fn main() {
 
 /// Create the start table
 fn make_table<const BITS: usize>(list: &[u8]) -> Table<BITS> {
-    assert!(2usize.pow(BITS as u32) == list.len());
     let mut table = Table::<BITS> {
         data: HashMap::new(),
         not_conbinable: HashSet::new(),
