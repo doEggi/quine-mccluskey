@@ -228,7 +228,8 @@ impl Display for State {
 impl<const BITS: usize> Display for Row<BITS> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
-        for (i, value) in self.data.iter().enumerate() {
+        //  We reverse rows so we get a LowEndian list (which is used on paper...)
+        for (i, value) in self.data.iter().rev().enumerate() {
             if i != 0 {
                 write!(f, ", ")?;
             }
