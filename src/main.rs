@@ -39,19 +39,18 @@ fn main() {
 /// x2 x1 x0  y \
 ///  0  0  0  0 \
 ///  0  0  1  0 \
-///  0  1  0  1 \
-///  0  1  1  1 \
+///  0  1  0  1 Needed \
+///  0  1  1  1 Needed \
 ///  1  0  0  0 \
 ///  1  0  1  0 \
-///  1  1  0  1 \
+///  1  1  0  1 Needed \
 ///  1  1  1  0 \
 /// is represented as
 /// ```rust
-/// //   x2 x1 x0      y
 /// &[
-///   &[0, 1, 0], // 1
-///   &[0, 1, 1], // 1
-///   &[1, 1, 0], // 1
+///   &[0, 1, 0], // ~x2  x1 ~x0
+///   &[0, 1, 1], // ~x2  x1  x0
+///   &[1, 1, 0], //  x2  x1  x0
 /// ]
 /// ```
 fn make_table(data: &[&[u8]]) -> Table {
@@ -59,6 +58,9 @@ fn make_table(data: &[&[u8]]) -> Table {
     for row in data {
         table.insert_row(Row::new(
             row.iter()
+                //  We reverse here so that row[0] is x0 and not row[2] is x0...
+                //  The human representation inside the table is switched around in byte order
+                .rev()
                 .map(|val| match val {
                     0 => State::Zero,
                     1 => State::One,
