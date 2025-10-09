@@ -1,8 +1,6 @@
 use crate::rows::Row;
-use std::{
-    cell::Cell,
-    collections::{HashMap, HashSet},
-};
+use rayon::prelude::*;
+use std::collections::{HashMap, HashSet};
 
 /// A table with a variable number of rows with BITS bits each
 #[derive(Debug, Default, Clone)]
@@ -18,38 +16,46 @@ impl Table {
 
     /// Make one tick (generate the next step table)
     pub fn next_step(&mut self) -> StepResult<'_> {
-        let mut todo: HashMap<usize, Vec<(&Row, Cell<bool>)>> = HashMap::new();
+        //  The map of rows sorted by ones
+        let mut sorted: HashMap<usize, Vec<&Row>> = HashMap::new();
         for row in &self.rows {
-            todo.entry(row.ones())
-                .or_default()
-                .push((row, Cell::new(false)));
+            sorted.entry(row.ones()).or_default().push(row);
         }
+        //  A list of all available counts of ones to iterate over
         let counts = {
-            let mut c: Vec<usize> = todo.keys().copied().collect();
+            let mut c: Vec<&usize> = sorted.keys().collect();
             c.sort_unstable();
             c
         };
-        let mut new_rows: HashSet<Row> = HashSet::new();
-        for count in counts.windows(2) {
-            let (now, then) = (count[0], count[1]);
-            for (row, checked1) in todo.get(&now).unwrap() {
-                for (other, checked2) in todo.get(&then).unwrap() {
-                    if let Some(row) = row.combine(other) {
-                        checked1.set(true);
-                        checked2.set(true);
-                        new_rows.insert(row);
-                    }
-                }
-            }
-        }
-        self.not_combinable.extend(
-            todo.into_values()
-                .flatten()
-                .filter(|(_, checked)| !checked.get())
-                .map(|(row, _)| row)
-                .cloned(),
-        );
-        self.rows = new_rows;
+        let (rows, used) = counts
+            .windows(2)
+            .flat_map(|indices| {
+                sorted
+                    .get(indices[0])
+                    .unwrap()
+                    .into_par_iter()
+                    .flat_map(|&row1| {
+                        sorted
+                            .get(indices[1])
+                            .unwrap()
+                            .into_iter()
+                            .filter_map(|&row2| row1.combine(row2).map(|row| (row, [row1, row2])))
+                            .collect::<Vec<_>>()
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .fold(
+                (HashSet::new(), HashSet::new()),
+                |(mut rows, mut used), (row, pair)| {
+                    rows.insert(row);
+                    used.extend(pair);
+                    (rows, used)
+                },
+            );
+
+        self.not_combinable.extend(used.into_iter().cloned());
+        self.rows = rows;
+
         if self.rows.is_empty() {
             StepResult::Done(&self.not_combinable)
         } else {

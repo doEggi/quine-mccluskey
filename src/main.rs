@@ -1,10 +1,12 @@
+/// Warning: this calculates the smaller possible function, not the smallest possible overall...
+/// You can take the result of this program and minimize it further.
+/// Also: with many bits the calculation takes multiple seconds.
+///       16bit: 50s with release build on my macbook m2
 use crate::{
     rows::{Row, State},
     table::{StepResult, Table},
 };
-/// Warning: this calculates the smaller possible function, not the smallest possible overall...
-/// You can take the result of this program and minimize it further.
-/// Also: with many bits (> 8) the calculation takes multiple seconds. It's not very optimized (yet).
+use rand::random;
 use std::time::Instant;
 
 mod rows;
@@ -12,7 +14,8 @@ mod table;
 
 fn main() {
     //  See doc of make_table() for explanation
-    let mut table: Table = make_table(&[&[0, 1, 0], &[0, 1, 1], &[1, 1, 0]]);
+    //let mut table: Table = make_table(&[&[0, 1, 0], &[0, 1, 1], &[1, 1, 0]]);
+    let mut table = make_random_table(16);
 
     let start = Instant::now();
     let rows = loop {
@@ -53,6 +56,7 @@ fn main() {
 ///   &[1, 1, 0], //  x2  x1  x0
 /// ]
 /// ```
+#[allow(dead_code)]
 fn make_table(data: &[&[u8]]) -> Table {
     let mut table = Table::new();
     for row in data {
@@ -69,5 +73,25 @@ fn make_table(data: &[&[u8]]) -> Table {
                 .collect(),
         ));
     }
+    table
+}
+
+#[allow(dead_code)]
+fn make_random_table(bits: u32) -> Table {
+    let size = 2u32.pow(bits);
+    let size = rand::random::<u32>() % size;
+    let mut table = Table::new();
+    (0..size)
+        .map(|_| {
+            Row::new(
+                (0..bits)
+                    .map(|_| match random() {
+                        true => State::One,
+                        false => State::Zero,
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .for_each(|row| table.insert_row(row));
     table
 }
